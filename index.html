@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>深空制图仪 · Cartograph</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/p5.min.js"></script>
+  <!-- 手部识别库（MediaPipe Hands，本地文件，完全离线） -->
+  <script src="assets/mediapipe/hands.js"></script>
+</head>
+<body>
+  <!-- 仪器读数：只放真实数据，不做装饰 -->
+  <section id="hud">
+    <h1>深空制图仪</h1>
+    <p class="serial">手控地球 · 第一号</p>
+    <hr>
+    <dl>
+      <div><dt>经度</dt><dd id="rd-lon">—</dd></div>
+      <div><dt>纬度</dt><dd id="rd-lat">—</dd></div>
+      <div><dt>倍率</dt><dd id="rd-zoom">1.00×</dd></div>
+      <div><dt>帧率</dt><dd id="rd-fps">—</dd></div>
+      <div><dt>手势</dt><dd id="rd-hand">启动中</dd></div>
+      <div><dt>陆地</dt><dd id="rd-land">—</dd></div>
+      <div><dt>海洋</dt><dd id="rd-sea">—</dd></div>
+      <div><dt>卫星</dt><dd id="rd-sat">—</dd></div>
+      <div><dt>空间站</dt><dd id="rd-station">—</dd></div>
+      <div><dt>航班</dt><dd id="rd-flight">—</dd></div>
+      <div><dt>月相</dt><dd id="rd-moon">—</dd></div>
+    </dl>
+    <p id="warn"></p>
+  </section>
+
+  <p id="hint">
+    手掌移动转动　五指收拢/张开缩放　比耶 ✌️ 触发流星雨<br>
+    鼠标拖拽 / 滚轮　食指拇指捏合两下进入看城市模式　每次摆手切换一个最近重点城市　空格暂停自转　[ ] 灵敏度　v 上下反向　f 航线　d 调试　s 存图
+  </p>
+
+  <div id="observer-city" aria-live="polite">
+    <div id="observer-city-zh"></div>
+    <div id="observer-city-en"></div>
+  </div>
+  <div id="meteor-shower-label" aria-live="polite">
+    <div id="meteor-shower-zh">流星雨</div>
+    <div id="meteor-shower-en">Meteor Shower</div>
+  </div>
+  <p id="observer-toast" aria-live="polite"></p>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+
+  <script src="sketch.js?v=20260913-observer-swipe-sensitive"></script>
+</body>
+</html>
