@@ -308,6 +308,8 @@ const HAND_TOUCH_Y = -1;    // 固定为真实手掌推动地球仪的纵向方�
 const VICTORY_HOLD_MS = 420;  // 比耶手势保持多久才触发流星雨
 const VICTORY_COOLDOWN_MS = 3500; // 手动触发后多久内不重复触发
 const HAND_ERROR_LIMIT        = 3;    // 连续失败到这个次数才重连
+const HAND_FRAME_INTERVAL_MS  = 1000 / 30; // 识别独立于渲染帧编号
+const HAND_STARTUP_TIMEOUT_MS = 15000; // 首帧需要加载模型和初始化 WASM
 const HAND_SEND_TIMEOUT_MS    = 2500; // 单次 send 超过这个时间视为卡死
 const HAND_RESULT_TIMEOUT_MS  = 3000; // 长时间没有结果也触发自检
 const HAND_RECOVERY_ATTEMPTS  = 3;    // 单轮最多重连次数
@@ -401,7 +403,6 @@ let victoryCooldownUntil = 0;
 let victoryFeedbackUntil = 0;
 let dtScale = 1;               // 帧率补偿：60fps 时 = 1，120fps 时 = 0.5
 let cameraFps = 60;            // 实际渲染帧率（自己数的，给状态栏显示）
-let lastDrawMs = 0;            // 上次真正渲染的时间
 let fpsCount = 0, fpsT0 = 0;
 const gRot = { R: 0, cx: 0, cy: 0, cr: 1, sr: 0, cyw: 1, syw: 0 };   // 本帧的投影参数
 let followX = HAND_FOLLOW_X;   // 运行时的左右灵敏度（按 [ ] 随时调）
@@ -411,6 +412,9 @@ let handRecoveryAttempts = 0;    // 当前这一轮自动重连已经尝试几�
 let handRecovering = false;
 let handUnavailable = false;
 let handsGeneration = 0;         // 防止旧实例的异步回调影响新实例
+let handLastSentAt = -Infinity;
+let handLastVideoTime = -1;
+let handInstanceHasResults = false;
 let handSendStartedAt = 0;
 let handLastSuccessAt = 0;
 let handLastError = "";
@@ -1723,11 +1727,8 @@ function setupDetect() {
 
 // ---------------- 每秒 60 次 ----------------
 function draw() {
-  // 有些机器上 p5 会跑得比屏幕刷新率还快，这里自己卡一道，
-  // 省电、也不会让风扇狂转（跳过也只是少画一帧，画布保留上一帧）
+  // p5 的 frameRate(TARGET_FPS) 统一调度，避免二次限帧误跳过绘制。
   const nowMs = millis();
-  if (nowMs - lastDrawMs < 1000 / TARGET_FPS - 0.7) return;
-  lastDrawMs = nowMs;
 
   // 自己数真实渲染帧率
   fpsCount++;
@@ -1748,7 +1749,7 @@ function draw() {
 
   if (revealT < 1) revealT = Math.min(1, revealT + dtSec / 1.4);   // 开场：一次扫描
 
-  // 1) 隔帧把手部画面喂给识别库
+  // 1) 按时间间隔送入新的视频帧，避免帧编号与绘制跳帧互相干扰
   checkHandsHealth();
   feedHands();
 
@@ -3322,6 +3323,9 @@ function prepareHandsSlot() {
   handReady = false;
   handsBusy = false;
   handSendStartedAt = 0;
+  handLastSentAt = -Infinity;
+  handLastVideoTime = -1;
+  handInstanceHasResults = false;
   handsGeneration++;
   if (old && typeof old.close === "function") {
     try {
@@ -3351,6 +3355,7 @@ function initHands() {
     });
     instance.onResults((results) => {
       if (generation !== handsGeneration || instance !== hands) return;
+      handInstanceHasResults = true;
       onHandResults(results);
     });
     hands = instance;
@@ -3431,14 +3436,14 @@ function handleHandsFailure(err, generation) {
 function checkHandsHealth() {
   if (!handReady || handRecovering || handUnavailable || !camOn || document.hidden) return;
   const now = millis();
-  if (handsBusy && handSendStartedAt && now - handSendStartedAt > HAND_SEND_TIMEOUT_MS) {
+  if (handsBusy && handSendStartedAt && now - handSendStartedAt > (handInstanceHasResults ? HAND_SEND_TIMEOUT_MS : HAND_STARTUP_TIMEOUT_MS)) {
     handLastError = "手部识别处理超时";
     handsBusy = false;
     handSendStartedAt = 0;
     recoverHands(handLastError);
     return;
   }
-  if (cameraOk && handLastSuccessAt && now - handLastSuccessAt > HAND_RESULT_TIMEOUT_MS) {
+  if (handInstanceHasResults && !handsBusy && cameraOk && handLastSuccessAt && now - handLastSuccessAt > HAND_RESULT_TIMEOUT_MS) {
     handLastError = "手部识别长时间没有返回结果";
     recoverHands(handLastError);
   }
@@ -3446,7 +3451,11 @@ function checkHandsHealth() {
 
 function feedHands() {
   if (!camOn || document.hidden || !handReady || handRecovering || handsBusy || !cameraOk) return;
-  if (frameCount % 2 !== 0) return;              // 隔帧送，省性能
+  const now = millis();
+  if (now - handLastSentAt < HAND_FRAME_INTERVAL_MS - 1) return;
+  if (videoEl.currentTime === handLastVideoTime) return;
+  handLastSentAt = now;
+  handLastVideoTime = videoEl.currentTime;
 
   const generation = handsGeneration;
   const instance = hands;
