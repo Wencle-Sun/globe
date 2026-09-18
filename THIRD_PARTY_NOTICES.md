@@ -8,20 +8,20 @@ below apply to those components in addition to the project's MIT License.
 - File: `js/p5.min.js`
 - Project: <https://github.com/processing/p5.js>
 - License: GNU Lesser General Public License v2.1 (LGPL-2.1)
-- License text: <https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html>
+- License text: [LGPL-2.1](licenses/p5-LGPL-2.1.txt)
+- Corresponding upstream source: <https://github.com/processing/p5.js/tree/v2.2.3>
+- npm distribution: <https://registry.npmjs.org/p5/-/p5-2.2.3.tgz>
 
 ## MediaPipe Hands 0.4.1675469240
 
 - Directory: `assets/mediapipe/`
 - Project: <https://github.com/google-ai-edge/mediapipe>
 - License: Apache License 2.0
-- License text: <https://www.apache.org/licenses/LICENSE-2.0>
+- License text: [Apache-2.0](licenses/MediaPipe-Apache-2.0.txt)
+- npm distribution: <https://registry.npmjs.org/@mediapipe/hands/-/hands-0.4.1675469240.tgz>
 
 ## Earth texture
 
 - File: `assets/earth.jpg`
-- Source and license: not recorded in the original project.
-
-Before publishing this repository, confirm that redistribution of
-`assets/earth.jpg` is permitted, or replace it with an asset whose source and
-license are clearly documented.
+- The project maintainer confirmed on 2026-09-18 that the original source was located and the image may be used for this release.
+- The source URL and exact license have not yet been recorded here. This image is not relicensed under the project's MIT License; downstream users should confirm its terms with the maintainer before redistributing it separately.

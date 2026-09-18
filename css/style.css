@@ -7,10 +7,10 @@
 :root {
   --void: #04060c;                 /* 视场之外 */
   --ink: #e9e5da;                  /* 数据白（偏暖，像仪器刻度） */
-  --ink-dim: rgba(233, 229, 218, 0.42);
-  --ink-faint: rgba(233, 229, 218, 0.22);
+  --ink-dim: rgba(233, 229, 218, 0.68);
+  --ink-faint: rgba(233, 229, 218, 0.52);
   --brass: #e3a04c;                /* 唯一的暖色信号 */
-  --rule: rgba(233, 229, 218, 0.14);
+  --rule: rgba(233, 229, 218, 0.20);
 
   --sans: "PingFang SC", "Helvetica Neue", Helvetica, sans-serif;
   --mono: "SF Mono", "Menlo", "PingFang SC", monospace;
@@ -29,9 +29,20 @@ html, body {
 
 canvas { display: block; }
 
+/* 左侧渐隐底：只帮助文字从地球和星空中分离，不做卡片 */
+#left-scrim {
+  position: fixed;
+  z-index: 1;
+  inset: 0 auto 0 0;
+  width: min(280px, 30vw);
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(2, 4, 9, 0.80), rgba(2, 4, 9, 0.30) 62%, transparent);
+}
+
 /* ---------- 左上角仪器读数 ---------- */
 #hud {
   position: fixed;
+  z-index: 3;
   left: 30px;
   top: 26px;
   width: 208px;
@@ -69,14 +80,14 @@ canvas { display: block; }
 }
 
 #hud dt {
-  font-size: 11px;
+  font-size: 11.5px;
   letter-spacing: 0.04em;
   color: var(--ink-dim);
 }
 
 #hud dd {
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   color: var(--ink);
@@ -85,22 +96,311 @@ canvas { display: block; }
 
 #hud #warn {
   margin-top: 10px;
-  font-size: 11px;
+  font-size: 11.5px;
   line-height: 1.7;
   color: var(--brass);
   min-height: 1px;
 }
 
+#hud .hud-break {
+  margin-top: 7px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+}
+
 /* ---------- 底部操作提示：安静，不抢戏 ---------- */
 #hint {
   position: fixed;
+  z-index: 3;
   left: 30px;
   bottom: 24px;
-  font-size: 11px;
+  max-width: min(560px, calc(100vw - 60px));
+  font-size: 12px;
   line-height: 1.9;
   letter-spacing: 0.03em;
   color: var(--ink-faint);
   pointer-events: none;
+}
+
+/* ---------- 左侧按键提示：与手势提示分开 ---------- */
+#key-hint {
+  position: fixed;
+  z-index: 3;
+  left: 30px;
+  top: 52%;
+  transform: translateY(-50%);
+  width: 150px;
+  font-size: 11.5px;
+  line-height: 1.75;
+  letter-spacing: 0.03em;
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+
+#key-hint span {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+#key-hint b {
+  width: 32px;
+  font-weight: 500;
+  color: var(--ink-dim);
+}
+
+body.ui-hidden #hud,
+body.ui-hidden #hint,
+body.ui-hidden #key-hint,
+body.ui-hidden #tutorial-button,
+body.ui-hidden #observer-city,
+body.ui-hidden #meteor-shower-label,
+body.ui-hidden #observer-toast,
+body.ui-hidden #left-scrim {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ---------- 详细教程 ---------- */
+#tutorial-button {
+  position: fixed;
+  z-index: 4;
+  left: 30px;
+  bottom: 122px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: rgba(4, 6, 12, 0.42);
+  color: var(--ink-dim);
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+#tutorial-button svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#tutorial-button:hover {
+  color: var(--ink);
+  border-color: rgba(227, 160, 76, 0.62);
+  background: rgba(4, 6, 12, 0.72);
+}
+
+#tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 22px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: rgba(2, 4, 9, 0.78);
+  backdrop-filter: blur(9px);
+  transition: opacity 0.24s ease, visibility 0.24s ease;
+}
+
+#tutorial-overlay.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.tutorial-hand-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#tutorial-panel {
+  width: min(980px, calc(100vw - 44px));
+  height: min(86vh, 760px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: clamp(18px, 3vw, 30px);
+  border: 1px solid rgba(233, 229, 218, 0.18);
+  border-radius: 2px;
+  background:
+    linear-gradient(140deg, rgba(18, 25, 40, 0.96), rgba(5, 8, 15, 0.98) 62%),
+    radial-gradient(circle at 18% 0%, rgba(227, 160, 76, 0.08), transparent 34%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.64);
+}
+
+.tutorial-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tutorial-head h2 {
+  font-size: clamp(20px, 2vw, 25px);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.tutorial-head p {
+  margin-top: 4px;
+  color: var(--ink-dim);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+#tutorial-close {
+  flex: 0 0 auto;
+  min-width: 38px;
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink-dim);
+  font-family: var(--sans);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+#tutorial-close:hover { color: var(--ink); border-color: var(--brass); }
+
+.tutorial-pace {
+  flex: 0 0 auto;
+  margin: 11px 0 0;
+  padding: 8px 12px;
+  border-left: 2px solid var(--brass);
+  color: var(--ink-dim);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.tutorial-pace strong { color: var(--ink); font-weight: 500; }
+
+.tutorial-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  background: var(--rule);
+}
+
+.tutorial-step {
+  display: grid;
+  grid-template-columns: minmax(105px, 0.78fr) minmax(0, 1.22fr);
+  gap: clamp(10px, 1.8vw, 18px);
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 13px 15px;
+  overflow: hidden;
+  background: rgba(8, 13, 22, 0.94);
+}
+
+.tutorial-figure {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding-right: 11px;
+  border-right: 1px solid var(--rule);
+}
+
+.tutorial-figure svg {
+  width: 100%;
+  max-width: 150px;
+  height: auto;
+  overflow: visible;
+}
+
+.tutorial-figure .ink {
+  fill: none;
+  stroke: rgba(233, 229, 218, 0.7);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tutorial-figure .ink-thin {
+  fill: none;
+  stroke: rgba(233, 229, 218, 0.34);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tutorial-figure .brass { fill: var(--brass); stroke: var(--brass); }
+
+.tutorial-figure .brass-line {
+  fill: none;
+  stroke: var(--brass);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tutorial-figure text {
+  fill: rgba(233, 229, 218, 0.56);
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+}
+
+.tutorial-figure .five-tip-lines {
+  fill: none;
+  stroke: var(--brass);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+  opacity: 0.82;
+}
+
+.tutorial-copy h3 {
+  margin-bottom: 5px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+.tutorial-copy p {
+  max-width: 64ch;
+  color: var(--ink-dim);
+  font-size: 11.5px;
+  line-height: 1.65;
+}
+
+.tutorial-tip { margin-top: 6px; font-size: 10.5px; }
+.tutorial-tip span {
+  color: var(--brass);
+  letter-spacing: 0.1em;
 }
 
 /* ---------- 观察者模式城市牌：屏幕下方，中英文上下排列 ---------- */
@@ -197,6 +497,37 @@ body.shower-active #observer-city { bottom: 224px; }
   transform: translate(-50%, 0);
 }
 
+#observer-toast.camera-switch {
+  bottom: 82px;
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--ink);
+  text-shadow: 0 0 18px rgba(233, 229, 218, 0.32), 0 2px 10px rgba(0, 0, 0, 0.72);
+}
+
+#observer-toast.camera-switch::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 12px;
+  border-radius: 50%;
+  background: var(--brass);
+  box-shadow: 0 0 14px rgba(227, 160, 76, 0.62);
+  vertical-align: 0.08em;
+}
+
+#observer-toast.camera-switch.camera-off {
+  color: var(--ink-dim);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.72);
+}
+
+#observer-toast.camera-switch.camera-off::before {
+  background: var(--ink-faint);
+  box-shadow: none;
+}
+
 /* ---------- 光学质感：暗角 + 极细颗粒 ---------- */
 #vignette {
   position: fixed;
@@ -223,5 +554,74 @@ body.shower-active #observer-city { bottom: 224px; }
 :focus-visible { outline: 1px solid var(--brass); outline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
-  #hint { transition: none; }
+  #tutorial-button,
+  #tutorial-overlay,
+  #observer-city,
+  #meteor-shower-label,
+  #observer-toast { transition: none; }
+}
+
+@media (max-width: 760px) {
+  #key-hint {
+    top: auto;
+    bottom: 118px;
+    left: 18px;
+    transform: none;
+    width: auto;
+    display: block;
+  }
+  #left-scrim { width: 72vw; }
+  #hint .hint-detail,
+  #hint .hint-break { display: none; }
+  #hint {
+    left: 18px;
+    bottom: 20px;
+    max-width: calc(100vw - 36px);
+    font-size: 11.5px;
+    line-height: 1.7;
+  }
+  #tutorial-button {
+    left: 18px;
+    bottom: 58px;
+    min-height: 44px;
+    padding: 9px 13px;
+  }
+  #tutorial-close { min-width: 44px; min-height: 44px; }
+  #tutorial-overlay { padding: 6px; }
+  #tutorial-panel {
+    width: calc(100vw - 12px);
+    height: calc(100vh - 12px);
+    padding: 10px;
+  }
+  .tutorial-head { padding-bottom: 7px; }
+  .tutorial-head h2 { font-size: 16px; }
+  .tutorial-head p { font-size: 10px; }
+  .tutorial-pace { margin-top: 6px; padding: 5px 7px; font-size: 9.5px; }
+  .tutorial-list { margin-top: 6px; }
+  .tutorial-step {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(52px, 0.75fr) minmax(0, 1.25fr);
+    gap: 4px;
+    padding: 6px 7px;
+  }
+  .tutorial-figure {
+    min-height: 0;
+    padding: 0 0 4px;
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .tutorial-figure svg { max-width: 86px; max-height: 58px; }
+  .tutorial-copy h3 { margin-bottom: 2px; font-size: 10.5px; }
+  .tutorial-copy p { font-size: 9px; line-height: 1.4; }
+  .tutorial-tip { margin-top: 2px; font-size: 8.5px; }
+}
+
+@media (min-width: 761px) and (max-height: 720px) {
+  #hud dl > div { padding: 2px 0; }
+  #hud hr { margin: 10px 0 9px; }
+  #key-hint {
+    top: auto;
+    bottom: 166px;
+    transform: none;
+  }
 }

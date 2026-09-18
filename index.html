@@ -11,30 +11,48 @@
 </head>
 <body>
   <!-- 仪器读数：只放真实数据，不做装饰 -->
+  <div id="left-scrim" aria-hidden="true"></div>
   <section id="hud">
     <h1>深空制图仪</h1>
     <p class="serial">手控地球 · 第一号</p>
     <hr>
     <dl>
+      <div><dt>手势</dt><dd id="rd-hand">启动中</dd></div>
+      <div><dt>倍率</dt><dd id="rd-zoom">1.00×</dd></div>
+      <div><dt>航班</dt><dd id="rd-flight">—</dd></div>
       <div><dt>经度</dt><dd id="rd-lon">—</dd></div>
       <div><dt>纬度</dt><dd id="rd-lat">—</dd></div>
-      <div><dt>倍率</dt><dd id="rd-zoom">1.00×</dd></div>
       <div><dt>帧率</dt><dd id="rd-fps">—</dd></div>
-      <div><dt>手势</dt><dd id="rd-hand">启动中</dd></div>
-      <div><dt>陆地</dt><dd id="rd-land">—</dd></div>
-      <div><dt>海洋</dt><dd id="rd-sea">—</dd></div>
-      <div><dt>卫星</dt><dd id="rd-sat">—</dd></div>
+      <div class="hud-break"><dt>卫星</dt><dd id="rd-sat">—</dd></div>
       <div><dt>空间站</dt><dd id="rd-station">—</dd></div>
-      <div><dt>航班</dt><dd id="rd-flight">—</dd></div>
-      <div><dt>月相</dt><dd id="rd-moon">—</dd></div>
     </dl>
-    <p id="warn"></p>
+    <p id="warn" role="status" aria-live="polite"></p>
   </section>
 
   <p id="hint">
-    手掌移动转动　五指收拢/张开缩放　比耶 ✌️ 触发流星雨<br>
-    鼠标拖拽 / 滚轮　食指拇指捏合两下进入看城市模式　每次摆手切换一个最近重点城市　空格暂停自转　[ ] 灵敏度　v 上下反向　f 航线　d 调试　s 存图
+    <span class="hint-primary">手掌移动转动　五指收拢/张开缩放　比耶触发流星雨</span><br class="hint-break">
+    <span class="hint-detail">鼠标点击城市进入观察者模式，长按拖拽解除　滚轮缩放</span><br class="hint-break">
+    <span class="hint-detail">食指拇指捏合两下进入城市模式　每次摆手切换一个最近重点城市</span><br class="hint-break">
+    <span class="hint-detail">五指捏合后轻微摆动两次解除观察者模式</span>
   </p>
+
+  <button id="tutorial-button" type="button" aria-expanded="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 4.5h5.2c1 0 1.8.8 1.8 1.8v13.2c0-1-.8-1.8-1.8-1.8H5z"/>
+      <path d="M19 4.5h-5.2c-1 0-1.8.8-1.8 1.8v13.2c0-1 .8-1.8 1.8-1.8H19z"/>
+    </svg>
+    <span>详细教程</span>
+  </button>
+
+  <div id="key-hint">
+    <span><b>空格</b> 暂停自转</span>
+    <span><b>[ ]</b> 灵敏度</span>
+    <span><b>f</b> 航线</span>
+    <span><b>c</b> 摄像头</span>
+    <span><b>r</b> 复位视角</span>
+    <span><b>s</b> 存图</span>
+    <span><b>u</b> 隐藏界面</span>
+  </div>
 
   <div id="observer-city" aria-live="polite">
     <div id="observer-city-zh"></div>
@@ -45,9 +63,169 @@
     <div id="meteor-shower-en">Meteor Shower</div>
   </div>
   <p id="observer-toast" aria-live="polite"></p>
+
+  <div id="tutorial-overlay" aria-hidden="true">
+    <svg class="tutorial-hand-sprite" aria-hidden="true">
+      <defs>
+        <symbol id="tutorial-hand-open" viewBox="0 0 120 160" shape-rendering="geometricPrecision">
+          <g fill="none" stroke="#c9d1d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M60 150V118"/>
+            <ellipse cx="60" cy="108" rx="19" ry="15"/>
+            <path d="M47 99L40 55"/>
+            <path d="M55 96L53 42"/>
+            <path d="M65 96L70 49"/>
+            <path d="M73 99L82 63"/>
+            <path d="M44 111L25 94L18 79"/>
+          </g>
+          <g fill="#e3a04c">
+            <circle cx="44" cy="78" r="3.2"/><circle cx="42" cy="61" r="3.2"/>
+            <circle cx="54" cy="70" r="3.2"/><circle cx="54" cy="55" r="3.2"/>
+            <circle cx="67" cy="73" r="3.2"/><circle cx="69" cy="59" r="3.2"/>
+            <circle cx="78" cy="81" r="3.2"/><circle cx="81" cy="69" r="3.2"/>
+            <circle cx="32" cy="100" r="3.2"/><circle cx="21" cy="86" r="3.2"/>
+          </g>
+        </symbol>
+        <symbol id="tutorial-hand-victory" viewBox="0 0 120 160" shape-rendering="geometricPrecision">
+          <g fill="none" stroke="#c9d1d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M60 150V118"/>
+            <ellipse cx="60" cy="108" rx="19" ry="15"/>
+            <path d="M52 99L36 37"/>
+            <path d="M62 99L77 37"/>
+            <path d="M44 111L25 94L18 79"/>
+            <path d="M72 102L86 91"/>
+            <path d="M76 108L91 101"/>
+          </g>
+          <g fill="#e3a04c">
+            <circle cx="47" cy="78" r="3.2"/><circle cx="41" cy="57" r="3.2"/>
+            <circle cx="67" cy="78" r="3.2"/><circle cx="72" cy="57" r="3.2"/>
+            <circle cx="32" cy="100" r="3.2"/><circle cx="21" cy="86" r="3.2"/>
+            <circle cx="80" cy="96" r="3.2"/><circle cx="86" cy="105" r="3.2"/>
+          </g>
+        </symbol>
+        <symbol id="tutorial-hand-pinch" viewBox="0 0 120 160" shape-rendering="geometricPrecision">
+          <g fill="none" stroke="#c9d1d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M60 150V118"/>
+            <ellipse cx="60" cy="108" rx="19" ry="15"/>
+            <path d="M53 98C50 84 47 72 43 65"/>
+            <path d="M45 106C34 102 29 91 33 78C35 72 39 67 43 65"/>
+            <circle cx="43" cy="65" r="12"/>
+            <path d="M64 96L75 39"/>
+            <path d="M72 99L87 48"/>
+            <path d="M78 104L96 60"/>
+          </g>
+          <g fill="#e3a04c">
+            <circle cx="49" cy="83" r="3.2"/><circle cx="43" cy="65" r="3.2"/>
+            <circle cx="69" cy="75" r="3.2"/><circle cx="72" cy="54" r="3.2"/>
+            <circle cx="79" cy="78" r="3.2"/><circle cx="83" cy="62" r="3.2"/>
+            <circle cx="85" cy="86" r="3.2"/><circle cx="90" cy="72" r="3.2"/>
+          </g>
+        </symbol>
+        <symbol id="tutorial-hand-five-pinch" viewBox="0 0 120 160" shape-rendering="geometricPrecision">
+          <g fill="none" stroke="#c9d1d9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M60 150V118"/>
+            <ellipse cx="60" cy="108" rx="19" ry="15"/>
+            <path d="M46 105L57 52"/>
+            <path d="M51 98L59 47"/>
+            <path d="M59 96L60 44"/>
+            <path d="M67 98L61 47"/>
+            <path d="M73 104L63 52"/>
+          </g>
+          <g fill="#e3a04c">
+            <circle cx="52" cy="81" r="3.2"/><circle cx="55" cy="65" r="3.2"/>
+            <circle cx="55" cy="76" r="3.2"/><circle cx="57" cy="61" r="3.2"/>
+            <circle cx="60" cy="74" r="3.2"/><circle cx="60" cy="58" r="3.2"/>
+            <circle cx="64" cy="76" r="3.2"/><circle cx="61" cy="61" r="3.2"/>
+            <circle cx="68" cy="82" r="3.2"/><circle cx="62" cy="66" r="3.2"/>
+            <circle cx="60" cy="48" r="6.5"/>
+          </g>
+        </symbol>
+      </defs>
+    </svg>
+
+    <section id="tutorial-panel" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+      <header class="tutorial-head">
+        <div>
+          <h2 id="tutorial-title">手势详细教程</h2>
+          <p>动作做完整，再进入下一步。</p>
+        </div>
+        <button id="tutorial-close" type="button" aria-label="关闭详细教程">关闭</button>
+      </header>
+
+      <div class="tutorial-pace">
+        <p><strong>慢一点，识别会更稳。</strong> 每个动作保持约 1 秒，完成后停一下；确认左上角状态变化，再收手。</p>
+      </div>
+
+      <div class="tutorial-list">
+        <article class="tutorial-step">
+          <div class="tutorial-figure" role="img" aria-label="手掌缓慢移动和五指缩放示意">
+            <svg viewBox="0 0 240 150">
+              <use href="#tutorial-hand-open" x="55" y="-12" width="130" height="168"/>
+              <path class="brass-line" d="M43 61h42m-42 0l-8-7m8 7l-8 7"/>
+              <path class="brass-line" d="M197 89h-42m42 0l8-7m-8 7l8 7"/>
+              <path class="brass-line" d="M120 15V5"/>
+              <text x="28" y="45">左右 / 上下缓慢移动</text>
+              <text x="82" y="139">五指慢慢开合</text>
+            </svg>
+          </div>
+          <div class="tutorial-copy">
+            <h3>手掌移动与五指缩放</h3>
+            <p>手掌移动约 1 秒，球面跟着手走。五指从张开到收拢或反向，同样保持约 1 秒；缩放时手掌别大幅平移。</p>
+            <p class="tutorial-tip"><span>节奏</span>慢开慢合，停一下再收手。</p>
+          </div>
+        </article>
+
+        <article class="tutorial-step">
+          <div class="tutorial-figure" role="img" aria-label="比耶手势保持一秒触发流星雨示意">
+            <svg viewBox="0 0 240 150">
+              <use href="#tutorial-hand-victory" x="42" y="-8" width="148" height="168"/>
+              <text x="28" y="26">V 字两指</text>
+              <text x="154" y="122">保持 1 秒</text>
+            </svg>
+          </div>
+          <div class="tutorial-copy">
+            <h3>比耶触发流星雨</h3>
+            <p>食指和中指竖起，其余手指收拢。保持约 1 秒，等左上角出现流星雨状态后再放下。</p>
+            <p class="tutorial-tip"><span>节奏</span>姿势稳定，不要一边比耶一边摆动。</p>
+          </div>
+        </article>
+
+        <article class="tutorial-step">
+          <div class="tutorial-figure" role="img" aria-label="双指捏合两次进入观察者模式并摆手切换城市示意">
+            <svg viewBox="0 0 240 150">
+              <use href="#tutorial-hand-pinch" x="38" y="-8" width="150" height="168"/>
+              <text x="24" y="24">拇指 + 食指成圆</text>
+              <text x="114" y="140">捏两次 → 摆手切换</text>
+            </svg>
+          </div>
+          <div class="tutorial-copy">
+            <h3>进入观察者模式</h3>
+            <p>拇指和食指捏一下，松开，再捏一下；两次间隔不超过 1.5 秒。进入后，手掌朝一个方向大幅扫过，从画面一侧进入、扫到另一侧后离开。</p>
+            <p class="tutorial-tip"><span>关键</span>动作幅度要大；开始和结尾尽量离开摄像头，不要停在中途回手。</p>
+          </div>
+        </article>
+
+        <article class="tutorial-step">
+          <div class="tutorial-figure" role="img" aria-label="五指聚拢后左右轻摆两次退出观察者模式示意">
+            <svg viewBox="0 0 240 150">
+              <use href="#tutorial-hand-five-pinch" x="35" y="-8" width="150" height="168"/>
+              <path class="brass-line" d="M52 77h38m-38 0l-8-7m8 7l-8 7"/>
+              <path class="brass-line" d="M188 77h-38m38 0l8-7m-8 7l8 7"/>
+              <text x="72" y="141">五指指尖聚拢 → 轻摆两次</text>
+            </svg>
+          </div>
+          <div class="tutorial-copy">
+            <h3>退出观察者模式</h3>
+            <p>五个指尖聚在一起，保持捏合，轻轻左右摆动两次；两次动作在约 2 秒内完成。</p>
+            <p class="tutorial-tip"><span>节奏</span>先捏合，再左右轻摆。</p>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+
   <div id="vignette"></div>
   <div id="grain"></div>
 
-  <script src="sketch.js?v=20260913-observer-swipe-sensitive"></script>
+  <script src="sketch.js?v=20260914-u-key-hide-ui"></script>
 </body>
 </html>

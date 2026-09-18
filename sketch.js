@@ -13,7 +13,7 @@
 // ---------------- 可调参数 ----------------
 const DOT_STEP    = 1.0;    // 陆地采样精度（度）：越小越密（1.0° ≈ 13700 个点，接近实心）
 const SEA_STEP    = 5.0;    // 海洋采样精度（度）：数值越大小蓝点越疏
-const TARGET_FPS  = 80;     // 渲染上限（120 = ProMotion 满速 / 80 = 更省电 / 60 = 最省）
+const TARGET_FPS = 60;             // 统一锁定 60fps
 const LAND_DOT    = 2.8;    // 陆地点大小：调大 → 点连成面（太小会一颗颗闪）
 const LAND_DOT_Z  = 1.6;    // 越朝向屏幕的陆地点再加大多少（做纵深，平滑变化）
 
@@ -62,16 +62,19 @@ const STATION_PASS_GLOBAL_MS   = 8000;
 const METEOR_SHOWER_LABEL_MS   = 2000;
 const HAND_PINCH_CLOSE_RATIO   = 0.45;
 const HAND_PINCH_RELEASE_RATIO = 0.58;
-const HAND_PINCH_DOUBLE_MS     = 1100;
+const HAND_PINCH_DOUBLE_MS     = 1600;
 const HAND_PINCH_MIN_GAP_MS    = 120;
 const HAND_PINCH_BLOCK_MS      = 520;
-const CITY_MODE_SWIPE_DISTANCE = 0.024; // 摆手切城距离：越小越灵敏
+const CITY_MODE_SWIPE_DISTANCE = 0.020; // 摆手累计位移达到这里就切城：越小越灵敏
+const CITY_MODE_SWIPE_MIN_FRAMES = 2;   // 至少连续移动两帧，过滤单帧抖动
 const CITY_MODE_SWIPE_COOLDOWN = 520;   // 连续切换的最短间隔
-const CITY_MODE_REARM_DISTANCE = 0.008; // 摆手后更容易重新待命
+const CITY_MODE_REARM_DISTANCE = 0.006; // 手停稳后重新待命
 const CITY_MODE_REARM_FRAMES   = 2;
+const CITY_MODE_REARM_RETURN_DISTANCE = 0.014; // 回手接近起点后才允许下一次切换
+const CITY_MODE_REARM_AWAY_FRAMES = 8;  // 停在别处时，稳定更久也能重新待命
 const CITY_MODE_FOCUS_READY    = 0.70;  // 聚焦动画到 70% 后即可继续切换
 const CITY_MODE_SHAKE_DISTANCE = 0.008;
-const CITY_MODE_SHAKE_WINDOW_MS = 1400;
+const CITY_MODE_SHAKE_WINDOW_MS = 2200;
 const CITY_MODE_SHAKE_REVERSALS = 2;
 const OBSERVER_LABEL_GROW_PX   = 2.2;
 const OBSERVER_LABEL_GROW_RATE = 0.14;
@@ -88,6 +91,34 @@ const KEY_CITY_EN = {
   "迪拜": "Dubai", "莫斯科": "Moscow", "伊斯坦布尔": "Istanbul", "伦敦": "London",
   "巴黎": "Paris", "纽约": "New York", "旧金山": "San Francisco",
   "圣保罗": "São Paulo", "悉尼": "Sydney", "开普敦": "Cape Town"
+};
+const CITY_EN_EXTRA = {
+  "香港": "Hong Kong", "达尔文": "Darwin", "凯恩斯": "Cairns", "乌鲁木齐": "Ürümqi",
+  "圣彼得堡": "Saint Petersburg", "洛杉矶": "Los Angeles", "芝加哥": "Chicago",
+  "多伦多": "Toronto", "墨西哥城": "Mexico City", "波哥大": "Bogotá", "利马": "Lima",
+  "布宜诺斯艾利斯": "Buenos Aires", "里约": "Rio de Janeiro", "拉各斯": "Lagos",
+  "开罗": "Cairo", "内罗毕": "Nairobi", "约翰内斯堡": "Johannesburg", "孟买": "Mumbai",
+  "德里": "Delhi", "卡拉奇": "Karachi", "曼谷": "Bangkok", "雅加达": "Jakarta",
+  "首尔": "Seoul", "马尼拉": "Manila", "喀山": "Kazan", "叶卡捷琳堡": "Yekaterinburg",
+  "新西伯利亚": "Novosibirsk", "伊尔库茨克": "Irkutsk", "符拉迪沃斯托克": "Vladivostok",
+  "兰州": "Lanzhou", "西宁": "Xining", "银川": "Yinchuan", "喀什": "Kashgar",
+  "法兰克福": "Frankfurt", "罗马": "Rome", "柏林": "Berlin", "马德里": "Madrid",
+  "阿姆斯特丹": "Amsterdam", "温哥华": "Vancouver", "西雅图": "Seattle", "丹佛": "Denver",
+  "达拉斯": "Dallas", "休斯顿": "Houston", "亚特兰大": "Atlanta", "迈阿密": "Miami",
+  "华盛顿": "Washington, D.C.", "费城": "Philadelphia", "凤凰城": "Phoenix",
+  "拉斯维加斯": "Las Vegas", "波特兰": "Portland", "明尼阿波利斯": "Minneapolis",
+  "底特律": "Detroit", "奥兰多": "Orlando", "盐湖城": "Salt Lake City",
+  "檀香山": "Honolulu", "安克雷奇": "Anchorage", "波士顿": "Boston",
+  "蒙特利尔": "Montreal", "圣地亚哥": "Santiago", "加拉加斯": "Caracas",
+  "巴塞罗那": "Barcelona", "米兰": "Milan", "维也纳": "Vienna", "华沙": "Warsaw",
+  "斯德哥尔摩": "Stockholm", "雅典": "Athens", "里斯本": "Lisbon", "都柏林": "Dublin",
+  "基辅": "Kyiv", "卡萨布兰卡": "Casablanca", "阿尔及尔": "Algiers",
+  "亚的斯亚贝巴": "Addis Ababa", "阿克拉": "Accra", "达累斯萨拉姆": "Dar es Salaam",
+  "德黑兰": "Tehran", "巴格达": "Baghdad", "利雅得": "Riyadh", "达卡": "Dhaka",
+  "科伦坡": "Colombo", "台北": "Taipei", "广州": "Guangzhou", "成都": "Chengdu",
+  "武汉": "Wuhan", "西安": "Xi'an", "吉隆坡": "Kuala Lumpur", "河内": "Hanoi",
+  "胡志明市": "Ho Chi Minh City", "大阪": "Osaka", "名古屋": "Nagoya", "釜山": "Busan",
+  "墨尔本": "Melbourne", "布里斯班": "Brisbane", "珀斯": "Perth", "奥克兰": "Auckland"
 };
 
 // 放大后逐步显示平时只作为光点存在的城市名称。
@@ -209,8 +240,6 @@ const MOON_MARIA = [
   { lat: 10,  lon: 21,  rx: 4,  ry: 3  }    // 澄海 Mare Serenitatis 南侧
 ];
 
-let moonPhase = 0.92;                              // 照亮比例（给读数用）
-
 // 人造卫星：轨道定义在「视空间」里，不随地球自转（物理上更对）
 // r = 轨道半径（地球半径的倍数）· inc = 轨道倾角 · asc = 升交点方位
 const ORBITS = [
@@ -275,9 +304,18 @@ const MAX_STEP    = 0.20;   // 每帧最多转多少（防突然抽动）
 // —— 手部识别（MediaPipe）——
 const HAND_FOLLOW_X = 2.4;  // 手掌【左右】移动 → 转动（越大越灵敏，1.0 = 完全跟手）
 const HAND_FOLLOW_Y = 1.0;  // 手掌【上下】移动 → 转动（灵敏度）
-const INVERT_Y = -1;        // 上下方向：1 = 正常，-1 = 反过来（按 v 可随时切换）
+const HAND_TOUCH_Y = -1;    // 固定为真实手掌推动地球仪的纵向方向
 const VICTORY_HOLD_MS = 420;  // 比耶手势保持多久才触发流星雨
 const VICTORY_COOLDOWN_MS = 3500; // 手动触发后多久内不重复触发
+const HAND_ERROR_LIMIT        = 3;    // 连续失败到这个次数才重连
+const HAND_SEND_TIMEOUT_MS    = 2500; // 单次 send 超过这个时间视为卡死
+const HAND_RESULT_TIMEOUT_MS  = 3000; // 长时间没有结果也触发自检
+const HAND_RECOVERY_ATTEMPTS  = 3;    // 单轮最多重连次数
+const HAND_RECOVERY_DELAYS_MS = [600, 1200, 2500];
+const HAND_LOCK_RELEASE_MS     = 900;  // 当前锁定手离开多久后允许换另一只手
+const CAMERA_RESTART_DELAY_MS = 600;  // 摄像头失效后的重建等待
+const CAMERA_RESTART_ATTEMPTS = 2;
+const CAMERA_STARTUP_WARN_MS  = 5000; // 首次启动多久后才提示检查权限
 
 // 手部静止稳定：不改变跟随灵敏度，只过滤微小抖动；放大后自动提高静止锁定。
 const HAND_FILTER_MIN  = 0.22;   // 小幅抖动时的关键点平滑
@@ -320,6 +358,8 @@ let keyCityIndex = -1;
 let handPinchClosed = false, lastHandPinchAt = 0, handPinchCycleUntil = 0;
 let cityModeActive = false, cityModeLastSwitchAt = 0;
 let cityModeSwipeArmed = true, cityModeStillFrames = 0;
+let cityModeGestureOrigin = null, cityModeGestureFrames = 0;
+let cityModeReturnAnchor = null;
 let fivePinchExitFrames = 0;
 let fivePinchArmedUntil = 0;
 let fivePinchShakeAxis = -1, fivePinchShakeDir = 0, fivePinchShakeReversals = 0;
@@ -334,10 +374,12 @@ let stationPulseCity = "", stationPulseStart = 0, stationPulseUntil = 0;
 let stationPulseLastGlobal = 0;
 const stationPulseCooldown = {};
 let routeFlashCity = "", routeFlashStart = 0, routeFlashUntil = 0;
+let tutorialOpen = false;
+let tutorialReturnFocus = null;
 
 let capture, videoEl, detect, dctx, prevData;
 let camOn = true, cameraOk = false;
-let motionCount = 0, spreadEMA = 0.3;
+let spreadEMA = 0.3;
 let motionVX = 0, motionVY = 0;   // 平滑后的运动速度
 let lastCX = null, lastCY = null; // 上一帧的运动中心
 let maskBuf = null;               // 运动掩码缓冲（复用，别每帧新建）
@@ -347,7 +389,7 @@ let hands = null, handReady = false, handsBusy = false;
 let handSeen = false, handCount = 0, lastHandFrame = -999;
 let lastPalm = null, lastPalmFrame = 0;
 let handZoom = null;
-let lockedHandLabel = "";
+let lockedHandLabel = "", handLockLastSeenAt = 0;
 let handSmoothX = null, handSmoothY = null;
 let handStillLocked = false;
 let handYSign = 0, handYSignFrames = 0;
@@ -363,11 +405,24 @@ let lastDrawMs = 0;            // 上次真正渲染的时间
 let fpsCount = 0, fpsT0 = 0;
 const gRot = { R: 0, cx: 0, cy: 0, cr: 1, sr: 0, cyw: 1, syw: 0 };   // 本帧的投影参数
 let followX = HAND_FOLLOW_X;   // 运行时的左右灵敏度（按 [ ] 随时调）
-let invertY = INVERT_Y;        // 运行时的上下方向（按 v 切换）
 let handFrames = 0;        // 识别库处理过的帧数（用来确认它真的在工作）
-let handErrors = 0;        // 出错次数
-let showDebug = false;
-
+let handConsecutiveErrors = 0;   // 连续失败次数（任意一次结果回调都会归零）
+let handRecoveryAttempts = 0;    // 当前这一轮自动重连已经尝试几次
+let handRecovering = false;
+let handUnavailable = false;
+let handsGeneration = 0;         // 防止旧实例的异步回调影响新实例
+let handSendStartedAt = 0;
+let handLastSuccessAt = 0;
+let handLastError = "";
+let handStatusMessage = "";
+let handRecoveryTimer = 0;
+let handHiddenAt = 0;
+let cameraRestarting = false;
+let cameraRestartAttempts = 0;
+let cameraUnreadySince = 0;
+let cameraEverReady = false;
+let cameraStartedAt = 0;
+let cameraStartupWarned = false;
 // 仪器元素：经纬网 / 赤道环 / 背景星 / 入场扫描
 let ptsGrid = [], ptsRing = [], bgStars = [];
 let starDust = [], meteors = [], showerMeteors = [], meteorSpawnQueue = [];
@@ -549,6 +604,9 @@ const ROUTES = [
   // 中国国内 10
   ["北京", "上海"], ["北京", "广州"], ["北京", "成都"], ["北京", "西安"], ["上海", "广州"],
   ["上海", "成都"], ["上海", "武汉"], ["广州", "成都"], ["成都", "武汉"], ["香港", "台北"],
+  // 成都：真实国际干线（双流 / 天府机场）
+  ["成都", "东京"], ["成都", "首尔"], ["成都", "曼谷"], ["成都", "新加坡"],
+  ["成都", "迪拜"], ["成都", "伦敦"],
   // 亚洲区内 12
   ["东京", "首尔"], ["大阪", "釜山"], ["东京", "大阪"], ["北京", "东京"], ["上海", "东京"],
   ["香港", "曼谷"], ["新加坡", "雅加达"], ["新加坡", "吉隆坡"], ["曼谷", "河内"], ["马尼拉", "香港"],
@@ -557,15 +615,27 @@ const ROUTES = [
   ["北京", "伦敦"], ["北京", "巴黎"], ["北京", "莫斯科"], ["上海", "巴黎"], ["上海", "阿姆斯特丹"],
   ["上海", "米兰"], ["香港", "伦敦"], ["东京", "伦敦"], ["首尔", "巴黎"], ["新加坡", "伦敦"],
   ["德里", "伦敦"], ["迪拜", "伦敦"],
+  // 欧洲区内热门干线
+  ["巴黎", "柏林"], ["巴黎", "罗马"], ["巴黎", "马德里"], ["巴黎", "巴塞罗那"], ["巴黎", "阿姆斯特丹"],
+  ["伦敦", "罗马"], ["伦敦", "马德里"], ["伦敦", "阿姆斯特丹"], ["柏林", "罗马"], ["马德里", "罗马"],
   // 跨太平洋 10
   ["北京", "洛杉矶"], ["上海", "洛杉矶"], ["上海", "旧金山"], ["香港", "旧金山"], ["台北", "旧金山"],
   ["东京", "洛杉矶"], ["东京", "纽约"], ["首尔", "洛杉矶"], ["新加坡", "旧金山"], ["悉尼", "洛杉矶"],
   // 跨大西洋 8
   ["伦敦", "纽约"], ["巴黎", "纽约"], ["罗马", "纽约"], ["阿姆斯特丹", "纽约"], ["马德里", "迈阿密"],
   ["柏林", "纽约"], ["都柏林", "波士顿"], ["里斯本", "纽约"],
+  // 美国—欧洲：补充热门直飞
+  ["波士顿", "伦敦"], ["亚特兰大", "伦敦"], ["亚特兰大", "巴黎"], ["迈阿密", "伦敦"],
+  ["西雅图", "伦敦"], ["丹佛", "法兰克福"], ["达拉斯", "伦敦"], ["休斯顿", "法兰克福"],
+  ["旧金山", "伦敦"], ["洛杉矶", "巴黎"], ["芝加哥", "法兰克福"], ["华盛顿", "伦敦"],
+  ["华盛顿", "巴黎"],
   // 美洲区内 8
   ["纽约", "芝加哥"], ["纽约", "迈阿密"], ["纽约", "多伦多"], ["洛杉矶", "西雅图"], ["达拉斯", "墨西哥城"],
   ["圣保罗", "里约"], ["布宜诺斯艾利斯", "圣地亚哥"], ["利马", "波哥大"],
+  // 美国国内热门干线
+  ["波士顿", "芝加哥"], ["波士顿", "迈阿密"], ["西雅图", "芝加哥"], ["西雅图", "纽约"],
+  ["丹佛", "纽约"], ["丹佛", "旧金山"], ["达拉斯", "纽约"], ["达拉斯", "迈阿密"],
+  ["亚特兰大", "纽约"], ["亚特兰大", "洛杉矶"], ["芝加哥", "洛杉矶"], ["迈阿密", "洛杉矶"],
   // 美国：补足主要枢纽的跨州、跨洋与亚太航线
   ["凤凰城", "洛杉矶"], ["凤凰城", "纽约"], ["凤凰城", "芝加哥"], ["凤凰城", "西雅图"],
   ["拉斯维加斯", "洛杉矶"], ["拉斯维加斯", "纽约"], ["拉斯维加斯", "芝加哥"], ["拉斯维加斯", "西雅图"],
@@ -630,8 +700,12 @@ let flightCount = 0;             // 本帧朝向屏幕一侧的航班数（给�
 // ---------------- 只跑一次 ----------------
 function setup() {
   pixelDensity(1);
-  createCanvas(windowWidth, windowHeight);
-  frameRate(TARGET_FPS);  // 想改帧率就改上面的 TARGET_FPS
+  const cv = createCanvas(windowWidth, windowHeight);
+  if (cv && cv.elt) {
+    cv.elt.setAttribute("role", "img");
+    cv.elt.setAttribute("aria-label", "可旋转的深空地球仪，支持鼠标拖拽、滚轮缩放和摄像头手掌手势控制");
+  }
+  frameRate(TARGET_FPS);
   colorMode(RGB, 255, 255, 255, 255);
 
   // 归一化光方向：光照和太阳位置用的是同一个方向，所以晨昏线一定对着太阳
@@ -655,6 +729,8 @@ function setup() {
   setupCamera();
   setupDetect();
   initHands();            // 启动手部识别（不在线，全部读本地文件）
+  initTutorial();
+  document.addEventListener("visibilitychange", onVisibilityChange);
   fpsT0 = millis();
 
   background(6, 9, 15);
@@ -839,9 +915,6 @@ function drawMoon(ctx) {
   const dz = MOON_DIR.z;
   const dn = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
   const center = { x: dx / dn * MOON_DIST, y: dy / dn * MOON_DIST, z: dz / dn * MOON_DIST };
-
-  // 月相读数：平行光下只由太阳相对镜头的方向决定
-  moonPhase = (1 + L.z) / 2;
 
   const Rz = gRot.R * zoom;
   const cq = projectView(center, Rz, gRot.cx, gRot.cy);
@@ -1539,12 +1612,101 @@ function drawMeteors(ctx) {
 }
 
 function setupCamera() {
+  cameraStartedAt = millis();
+  cameraStartupWarned = false;
   capture = createCapture(VIDEO);
   videoEl = capture.elt || capture;
   if (videoEl && videoEl.style) videoEl.style.display = "none";
   if (videoEl && videoEl.play) {
     const pr = videoEl.play();
     if (pr && pr.catch) pr.catch(() => {});     // 忽略自动播放限制的报错
+  }
+  bindCameraEvents();
+}
+
+function bindCameraEvents() {
+  if (!videoEl || videoEl._globeCameraBound) return;
+  videoEl._globeCameraBound = true;
+  const markUnready = () => { cameraUnreadySince = millis(); };
+  ["ended", "error", "emptied", "stalled"].forEach((name) => {
+    videoEl.addEventListener(name, markUnready);
+  });
+}
+
+function removeCameraElement() {
+  try {
+    if (capture && typeof capture.remove === "function") capture.remove();
+    else if (videoEl && typeof videoEl.remove === "function") videoEl.remove();
+  } catch (e) {}
+  capture = null;
+  videoEl = null;
+  cameraOk = false;
+}
+
+function restartCamera() {
+  if (cameraRestarting || document.hidden || !cameraEverReady) return;
+  if (cameraRestartAttempts >= CAMERA_RESTART_ATTEMPTS) {
+    prepareHandsSlot();
+    handUnavailable = true;
+    handReady = false;
+    handRecovering = false;
+    handsBusy = false;
+    handStatusMessage = "⚠️ 摄像头暂时不可用，已切到鼠标 / 画面模式";
+    return;
+  }
+  cameraRestarting = true;
+  cameraRestartAttempts++;
+  cameraUnreadySince = 0;
+  removeCameraElement();
+  setTimeout(() => {
+    if (!document.hidden) setupCamera();
+    cameraRestarting = false;
+    if (videoEl) recoverHands("摄像头重连");
+  }, CAMERA_RESTART_DELAY_MS);
+}
+
+function maintainCamera() {
+  if (document.hidden || cameraRestarting) return;
+  if (!cameraEverReady) {
+    if (videoEl && videoEl.paused && videoEl.play) {
+      const pr = videoEl.play();
+      if (pr && pr.catch) pr.catch(() => {});
+    }
+    if (!cameraStartupWarned && millis() - cameraStartedAt > CAMERA_STARTUP_WARN_MS) {
+      cameraStartupWarned = true;
+    }
+    return;
+  }
+  if (cameraReady()) {
+    if (videoEl && videoEl.paused && videoEl.play) {
+      const pr = videoEl.play();
+      if (pr && pr.catch) pr.catch(() => {});
+    }
+    cameraEverReady = true;
+    cameraRestartAttempts = 0;
+    cameraUnreadySince = 0;
+    return;
+  }
+  const now = millis();
+  if (!cameraUnreadySince) cameraUnreadySince = now;
+  if (videoEl && videoEl.paused && videoEl.play) {
+    const pr = videoEl.play();
+    if (pr && pr.catch) pr.catch(() => {});
+  }
+  if (now - cameraUnreadySince > 2200) restartCamera();
+}
+
+function onVisibilityChange() {
+  if (document.hidden) {
+    handHiddenAt = millis();
+    return;
+  }
+  const hiddenFor = handHiddenAt ? millis() - handHiddenAt : 0;
+  handHiddenAt = 0;
+  if (handUnavailable || cameraRestarting || !cameraEverReady) return;
+  if (hiddenFor > 1200 || !cameraReady()) {
+    handRecovering = false;
+    recoverHands("页面重新可见");
   }
 }
 
@@ -1576,6 +1738,7 @@ function draw() {
   }
 
   background(4, 6, 12);
+  maintainCamera();
   cameraOk = cameraReady();
 
   // 让转动/惯性/缩放的速度和帧率无关：
@@ -1586,6 +1749,7 @@ function draw() {
   if (revealT < 1) revealT = Math.min(1, revealT + dtSec / 1.4);   // 开场：一次扫描
 
   // 1) 隔帧把手部画面喂给识别库
+  checkHandsHealth();
   feedHands();
 
   // 2) 控制来源
@@ -1613,7 +1777,7 @@ function draw() {
     if (!usingHandsNow) {
       const k = dtScale;
       rotY += constrain(inputVX * FOLLOW * followX * k, -MAX_STEP * k, MAX_STEP * k);
-      rotX += constrain(inputVY * FOLLOW * HAND_FOLLOW_Y * invertY * k, -MAX_STEP * k, MAX_STEP * k);
+      rotX += constrain(inputVY * FOLLOW * HAND_FOLLOW_Y * HAND_TOUCH_Y * k, -MAX_STEP * k, MAX_STEP * k);
       spinY = spinY * 0.5 + inputVX * FLICK * 0.5;
       spinX = spinX * 0.5 + inputVY * FLICK * 0.5;
     }
@@ -1679,7 +1843,6 @@ function draw() {
   drawMarkers();      // 城市/国家标注（永远在最上层）
   drawStatus();
   updateReadout();
-  if (showDebug) drawDebug();
 }
 
 /* ---------- 3D → 2D 投影 ---------- */
@@ -2653,6 +2816,10 @@ function cancelCityFocus() {
   cityFocusReturn = null;
   cityModeActive = false;
   cityModeLastSwitchAt = 0;
+  cityModeSwipeArmed = true;
+  cityModeStillFrames = 0;
+  cityModeReturnAnchor = null;
+  resetCityModeSwipeGesture();
   spinX = spinY = 0;
 }
 
@@ -2737,7 +2904,7 @@ function showObserverCity(name) {
   const en = document.getElementById("observer-city-en");
   if (!el || !zh || !en) return;
   zh.textContent = name;
-  en.textContent = KEY_CITY_EN[name] || name;
+  en.textContent = KEY_CITY_EN[name] || CITY_EN_EXTRA[name] || name;
   el.classList.add("show");
 }
 
@@ -2746,15 +2913,120 @@ function hideObserverCity() {
   if (el) el.classList.remove("show");
 }
 
-function showObserverToast(text) {
+function showObserverToast(text, prominent) {
   const el = document.getElementById("observer-toast");
   if (!el) return;
   el.textContent = text;
+  el.classList.toggle("camera-switch", !!prominent);
+  if (!prominent) el.classList.remove("camera-off");
   el.classList.add("show");
   clearTimeout(showObserverToast._timer);
   showObserverToast._timer = setTimeout(function () {
-    el.classList.remove("show");
+    el.classList.remove("show", "camera-switch", "camera-off");
   }, 1600);
+}
+
+function showCameraSwitchToast(enabled) {
+  const el = document.getElementById("observer-toast");
+  showObserverToast(enabled ? "摄像头已开启" : "摄像头已关闭", true);
+  if (el) el.classList.toggle("camera-off", !enabled);
+}
+
+function initTutorial() {
+  const button = document.getElementById("tutorial-button");
+  const overlay = document.getElementById("tutorial-overlay");
+  const close = document.getElementById("tutorial-close");
+  if (!button || !overlay || !close) return;
+  button.addEventListener("click", function (event) {
+    event.preventDefault();
+    openTutorial();
+  });
+  close.addEventListener("click", closeTutorial);
+  overlay.addEventListener("click", function (event) {
+    if (event.target === overlay) closeTutorial();
+  });
+  document.addEventListener("keydown", handleTutorialKeydown);
+}
+
+function tutorialBackgroundElements() {
+  return document.querySelectorAll("#hud, #hint, #key-hint, #tutorial-button, #observer-city, #meteor-shower-label, #observer-toast, #left-scrim, canvas");
+}
+
+function setTutorialBackgroundInert(inert) {
+  const elements = tutorialBackgroundElements();
+  for (let i = 0; i < elements.length; i++) {
+    if (inert) elements[i].setAttribute("inert", "");
+    else elements[i].removeAttribute("inert");
+  }
+}
+
+function handleTutorialKeydown(event) {
+  if (!tutorialOpen) return;
+  if (event.key === "Escape" || event.key === "Esc") {
+    event.preventDefault();
+    closeTutorial();
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const overlay = document.getElementById("tutorial-overlay");
+  if (!overlay) return;
+  const focusable = overlay.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+  if (!focusable.length) {
+    event.preventDefault();
+    return;
+  }
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function openTutorial() {
+  const overlay = document.getElementById("tutorial-overlay");
+  const panel = document.getElementById("tutorial-panel");
+  const button = document.getElementById("tutorial-button");
+  const close = document.getElementById("tutorial-close");
+  if (!overlay || !button || !close) return;
+  tutorialReturnFocus = document.activeElement;
+  tutorialOpen = true;
+  overlay.classList.add("show");
+  overlay.setAttribute("aria-hidden", "false");
+  button.setAttribute("aria-expanded", "true");
+  setTutorialBackgroundInert(true);
+  overlay.scrollTop = 0;
+  if (panel) panel.scrollTop = 0;
+  close.focus();
+  setTimeout(function () {
+    if (tutorialOpen) close.focus();
+  }, 0);
+  if (panel) panel.scrollTop = 0;
+}
+
+function closeTutorial() {
+  const overlay = document.getElementById("tutorial-overlay");
+  const button = document.getElementById("tutorial-button");
+  if (!overlay || !button) return;
+  if (!tutorialOpen && !overlay.classList.contains("show")) return;
+  tutorialOpen = false;
+  overlay.classList.remove("show");
+  overlay.setAttribute("aria-hidden", "true");
+  button.setAttribute("aria-expanded", "false");
+  setTutorialBackgroundInert(false);
+  const returnTarget = tutorialReturnFocus && document.contains(tutorialReturnFocus)
+    ? tutorialReturnFocus
+    : button;
+  tutorialReturnFocus = null;
+  returnTarget.focus();
+}
+
+function resetCityModeSwipeGesture() {
+  cityModeGestureOrigin = null;
+  cityModeGestureFrames = 0;
 }
 
 function chooseObserverEntryCity() {
@@ -2779,13 +3051,20 @@ function chooseObserverEntryCity() {
   return bestName;
 }
 
-function enterCityMode() {
-  if (cityModeActive) return;
+function enterCityMode(preferredCity) {
+  if (cityModeActive) {
+    if (preferredCity && CITIES[preferredCity]) startCityFocus(preferredCity);
+    return;
+  }
   cityModeActive = true;
   showObserverToast("进入观察者模式");
   cityModeSwipeArmed = true;
   cityModeStillFrames = 0;
-  const firstCity = chooseObserverEntryCity();
+  cityModeReturnAnchor = null;
+  resetCityModeSwipeGesture();
+  const firstCity = preferredCity && CITIES[preferredCity]
+    ? preferredCity
+    : chooseObserverEntryCity();
   const firstIndex = KEY_CITIES.indexOf(firstCity);
   if (firstIndex >= 0) keyCityIndex = firstIndex;
   startCityFocus(firstCity);
@@ -2866,6 +3145,8 @@ function exitCityMode() {
   cityModeLastSwitchAt = 0;
   cityModeSwipeArmed = true;
   cityModeStillFrames = 0;
+  cityModeReturnAnchor = null;
+  resetCityModeSwipeGesture();
   cityFocus = null;
   cityFocusReturn = null;
   spinX = spinY = 0;
@@ -2877,7 +3158,7 @@ function handleCityClick(x, y) {
     const nearPoint = Math.hypot(x - c.x, y - c.y) <= CITY_CLICK_RADIUS;
     const insideText = c.rect && x >= c.rect.x1 && x <= c.rect.x2 && y >= c.rect.y1 && y <= c.rect.y2;
     if (nearPoint || insideText) {
-      startCityFocus(c.name);
+      enterCityMode(c.name);
       return;
     }
   }
@@ -2992,11 +3273,8 @@ function updateReadout() {
   setText("rd-lat", Math.abs(lat).toFixed(1) + "° " + (lat >= 0 ? "N" : "S"));
   setText("rd-zoom", zoom.toFixed(2) + "×");
   setText("rd-fps", (Math.round(cameraFps / 5) * 5) + " fps");
-  setText("rd-land", ptsLand.length.toLocaleString());
-  setText("rd-sea", ptsSea.length.toLocaleString());
   setText("rd-sat", (ORBITS.length + MOON_ORBITS.length) + " 颗");
   setText("rd-station", "1 座");
-  setText("rd-moon", Math.round(moonPhase * 100) + "%");
   const flightVisible = forceFlights || zoom > 1.35;
   setText("rd-flight", flightVisible
     ? flightCount + " 架" + (forceFlights ? " · 强制" : "")
@@ -3004,40 +3282,26 @@ function updateReadout() {
 }
 
 function drawStatus() {
-  if (!cameraOk) setCamStatus("启动中");
+  if (!camOn) setCamStatus("摄像头已关闭");
+  else if (!cameraOk) setCamStatus("摄像头启动中");
+  else if (handRecovering) setCamStatus("识别重连中（" + Math.min(handRecoveryAttempts, HAND_RECOVERY_ATTEMPTS) + "/" + HAND_RECOVERY_ATTEMPTS + "）");
+  else if (handUnavailable) setCamStatus("识别暂不可用");
   else if (!handReady) setCamStatus("画面运动模式");
-  else if (handErrors >= 3) setCamStatus("识别出错");
   else if (millis() < victoryFeedbackUntil) setCamStatus("✌️ 流星雨");
   else if (usingHandsNow) setCamStatus("识别中 · " + handCount + " 只手");
   else setCamStatus("待机");
 
-  if (!hasTexture) setStatus("没读到地球贴图 assets/earth.jpg，现在显示的是网格球");
-  else if (!cameraOk) setStatus("摄像头未就绪，可先用鼠标拖拽");
+  if (!camOn) setStatus("摄像头已关闭，鼠标仍可控制");
+  else if (!hasTexture) setStatus("没读到地球贴图 assets/earth.jpg，现在显示的是网格球");
+  else if (!cameraOk) setStatus(cameraStartupWarned
+    ? "摄像头未就绪，请在浏览器里允许使用摄像头"
+    : "摄像头未就绪，可先用鼠标拖拽");
+  else if (handStatusMessage) setStatus(handStatusMessage);
   else setStatus("");
 }
 
 function ctx2d() {
   return drawingContext;
-}
-
-function drawDebug() {
-  const w = detect.width * 2, h = detect.height * 2;
-  const x = width - w - 20, y = 20;
-  const ctx = drawingContext;
-  ctx.save();
-  ctx.globalAlpha = 0.85;
-  ctx.drawImage(detect, x, y, w, h);
-  ctx.restore();
-
-  noFill();
-  stroke(120, 200, 255, 160);
-  rect(x, y, w, h);
-  noStroke();
-  fill(160, 210, 255, 210);
-  textSize(12);
-  textAlign(LEFT, BOTTOM);
-  text("d：调试视图　运动点 " + motionCount + "　速度 " + motionVX.toFixed(3) + ", " + motionVY.toFixed(3), x, y - 6);
-  textAlign(LEFT, BASELINE);
 }
 
 /* ==========================================================
@@ -3046,42 +3310,172 @@ function drawDebug() {
    文件都在 assets/mediapipe/ 里，不联网也能跑。
    给出 21 个手部关键点 → 手掌位置（转）+ 拇指食指距离（缩放）
    ========================================================== */
+function handsErrorText(err) {
+  const text = err && err.message ? String(err.message) : String(err || "未知错误");
+  return text.length > 120 ? text.slice(0, 117) + "..." : text;
+}
+
+/* 关闭旧实例；generation 让旧实例的异步回调失效。 */
+function prepareHandsSlot() {
+  const old = hands;
+  hands = null;
+  handReady = false;
+  handsBusy = false;
+  handSendStartedAt = 0;
+  handsGeneration++;
+  if (old && typeof old.close === "function") {
+    try {
+      const closed = old.close();
+      if (closed && closed.catch) closed.catch(() => {});
+    } catch (e) {}
+  }
+}
+
 function initHands() {
   if (typeof Hands === "undefined") {
-    setStatus("⚠️ 没加载手部识别库 assets/mediapipe/hands.js");
-    return;
+    handLastError = "没加载手部识别库 assets/mediapipe/hands.js";
+    handStatusMessage = "⚠️ " + handLastError;
+    handUnavailable = true;
+    return false;
   }
+
+  prepareHandsSlot();
+  const generation = handsGeneration;
   try {
-    hands = new Hands({ locateFile: (f) => "assets/mediapipe/" + f });
-    hands.setOptions({
+    const instance = new Hands({ locateFile: (f) => "assets/mediapipe/" + f });
+    instance.setOptions({
       maxNumHands: 1,
       modelComplexity: 0,        // 0 = 轻量模型（快一倍，够用）；1 = 完整模型（更准但更吃 CPU）
       minDetectionConfidence: 0.6,
       minTrackingConfidence: 0.6
     });
-    hands.onResults(onHandResults);
+    instance.onResults((results) => {
+      if (generation !== handsGeneration || instance !== hands) return;
+      onHandResults(results);
+    });
+    hands = instance;
     handReady = true;
+    handUnavailable = false;
+    handConsecutiveErrors = 0;
+    handsBusy = false;
+    handSendStartedAt = 0;
+    handLastSuccessAt = millis();
+    return true;
   } catch (e) {
-    setStatus("⚠️ 手部识别初始化失败：" + e.message);
+    handLastError = handsErrorText(e);
+    if (!handRecovering) {
+      handUnavailable = true;
+      handStatusMessage = "⚠️ 手部识别初始化失败：" + handLastError;
+    }
+    return false;
+  }
+}
+
+function markHandsUnavailable() {
+  prepareHandsSlot();
+  handRecovering = false;
+  handUnavailable = true;
+  const detail = handLastError ? "：" + handLastError : "";
+  handStatusMessage = "⚠️ 手部识别暂不可用，已切到鼠标 / 画面模式" + detail;
+}
+
+function recoverHands(reason) {
+  if (handRecovering || handUnavailable) return;
+  if (reason) handLastError = reason;
+  handRecovering = true;
+  prepareHandsSlot();
+
+  if (handRecoveryAttempts >= HAND_RECOVERY_ATTEMPTS) {
+    markHandsUnavailable();
+    return;
+  }
+
+  const attemptIndex = handRecoveryAttempts++;
+  const delay = HAND_RECOVERY_DELAYS_MS[Math.min(attemptIndex, HAND_RECOVERY_DELAYS_MS.length - 1)];
+  handStatusMessage = "⚠️ " + handLastError + " · 正在自动重连 " + handRecoveryAttempts + "/" + HAND_RECOVERY_ATTEMPTS;
+  clearTimeout(handRecoveryTimer);
+  handRecoveryTimer = setTimeout(() => {
+    if (!handRecovering || !camOn || document.hidden) {
+      handRecovering = false;
+      return;
+    }
+
+    if (!cameraReady()) {
+      handRecovering = false;
+      restartCamera();
+      return;
+    }
+
+    if (initHands()) {
+      handRecovering = false;
+      handStatusMessage = "⚠️ " + handLastError + " · 已重连，等待识别";
+    } else {
+      handRecovering = false;
+      recoverHands(handLastError);
+    }
+  }, delay);
+}
+
+function handleHandsFailure(err, generation) {
+  if (generation !== handsGeneration) return;
+  handsBusy = false;
+  handSendStartedAt = 0;
+  handConsecutiveErrors++;
+  handLastError = handsErrorText(err);
+  console.warn("[Hands] frame failed (" + handConsecutiveErrors + "/" + HAND_ERROR_LIMIT + "):", handLastError);
+  if (handRecoveryAttempts > 0 || handConsecutiveErrors >= HAND_ERROR_LIMIT) {
+    recoverHands(handLastError);
+  }
+}
+
+function checkHandsHealth() {
+  if (!handReady || handRecovering || handUnavailable || !camOn || document.hidden) return;
+  const now = millis();
+  if (handsBusy && handSendStartedAt && now - handSendStartedAt > HAND_SEND_TIMEOUT_MS) {
+    handLastError = "手部识别处理超时";
+    handsBusy = false;
+    handSendStartedAt = 0;
+    recoverHands(handLastError);
+    return;
+  }
+  if (cameraOk && handLastSuccessAt && now - handLastSuccessAt > HAND_RESULT_TIMEOUT_MS) {
+    handLastError = "手部识别长时间没有返回结果";
+    recoverHands(handLastError);
   }
 }
 
 function feedHands() {
-  if (!handReady || handsBusy || !cameraOk) return;
+  if (!camOn || document.hidden || !handReady || handRecovering || handsBusy || !cameraOk) return;
   if (frameCount % 2 !== 0) return;              // 隔帧送，省性能
+
+  const generation = handsGeneration;
+  const instance = hands;
+  handsBusy = true;
+  handSendStartedAt = millis();
+  let task;
   try {
-    handsBusy = true;
-    hands.send({ image: videoEl })
-      .catch((err) => {
-        handErrors++;
-        if (handErrors === 3) {
-          setStatus("⚠️ 手部识别出错：" + (err && err.message ? err.message : err));
-        }
-      })
-      .then(() => { handsBusy = false; });
+    task = instance.send({ image: videoEl });
   } catch (e) {
     handsBusy = false;
+    handSendStartedAt = 0;
+    handleHandsFailure(e, generation);
+    return;
   }
+
+  if (!task || typeof task.then !== "function") {
+    handsBusy = false;
+    handSendStartedAt = 0;
+    handleHandsFailure(new Error("hands.send 没有返回 Promise"), generation);
+    return;
+  }
+
+  task
+    .catch((err) => { handleHandsFailure(err, generation); })
+    .then(() => {
+      if (generation !== handsGeneration) return;
+      handsBusy = false;
+      handSendStartedAt = 0;
+    });
 }
 
 // 手心 = 手腕 + 四个掌指关节的平均
@@ -3193,14 +3587,32 @@ function updateHandDoublePinch(lm) {
 
 function onHandResults(results) {
   handFrames++;
+  handConsecutiveErrors = 0;
+  handRecoveryAttempts = 0;
+  handRecovering = false;
+  handUnavailable = false;
+  handLastError = "";
+  handStatusMessage = "";
+  handLastSuccessAt = millis();
   let list = (results && results.multiHandLandmarks) || [];
   const handedness = (results && results.multiHandedness) || [];
   const handLabel = handedness[0] && handedness[0].label ? handedness[0].label : "";
+  const nowMs = millis();
 
-  // 只锁定第一次识别到的那只手；另一只手进入画面时直接忽略。
-  if (!lockedHandLabel && handLabel) lockedHandLabel = handLabel;
+  // 只保留一只手作为控制手；当前手持续离开后允许换另一只手。
+  if (!lockedHandLabel && handLabel) {
+    lockedHandLabel = handLabel;
+    handLockLastSeenAt = nowMs;
+  }
   if (list.length && lockedHandLabel && handLabel && handLabel !== lockedHandLabel) {
-    list = [];
+    if (handLockLastSeenAt && nowMs - handLockLastSeenAt > HAND_LOCK_RELEASE_MS) {
+      lockedHandLabel = handLabel;
+      handLockLastSeenAt = nowMs;
+    } else {
+      list = [];
+    }
+  } else if (list.length && handLabel === lockedHandLabel) {
+    handLockLastSeenAt = nowMs;
   }
   handCount = list.length;
 
@@ -3220,6 +3632,10 @@ function onHandResults(results) {
     handPinchClosed = false;
     lastHandPinchAt = 0;
     handPinchCycleUntil = 0;
+    cityModeSwipeArmed = true;
+    cityModeStillFrames = 0;
+    cityModeReturnAnchor = null;
+    resetCityModeSwipeGesture();
     victoryGestureActive = false;
     victoryTriggered = false;
     victoryHoldStart = 0;
@@ -3341,25 +3757,45 @@ function onHandResults(results) {
       }
 
       if (!cityModeSwipeArmed) {
+        resetCityModeSwipeGesture();
+        const returnDist = cityModeReturnAnchor
+          ? Math.hypot(handSmoothX - cityModeReturnAnchor.x, handSmoothY - cityModeReturnAnchor.y)
+          : 0;
+        const backAtOrigin = !cityModeReturnAnchor || returnDist < CITY_MODE_REARM_RETURN_DISTANCE;
         if (move < CITY_MODE_REARM_DISTANCE) cityModeStillFrames++;
         else cityModeStillFrames = 0;
         if (cityModeStillFrames >= CITY_MODE_REARM_FRAMES &&
+            (backAtOrigin || cityModeStillFrames >= CITY_MODE_REARM_AWAY_FRAMES) &&
             nowMs - cityModeLastSwitchAt > CITY_MODE_SWIPE_COOLDOWN && focusReady) {
           cityModeSwipeArmed = true;
+          cityModeReturnAnchor = null;
           cityModeStillFrames = 0;
         }
-      } else if (!observerExited && move > CITY_MODE_SWIPE_DISTANCE &&
+      } else if (!observerExited && move > 0.0005 &&
                  nowMs - cityModeLastSwitchAt > CITY_MODE_SWIPE_COOLDOWN && focusReady) {
-        // 与手掌“拨动地球仪”的视觉方向保持一致：手势方向反转后选择城市。
-        const direction = Math.abs(dx) >= Math.abs(dy)
-          ? (dx >= 0 ? "left" : "right")
-          : (dy >= 0 ? "up" : "down");
-        navigateKeyCity(direction);
-        cityModeLastSwitchAt = nowMs;
-        cityModeSwipeArmed = false;
-        cityModeStillFrames = 0;
-        lastPalm = { x: handSmoothX, y: handSmoothY };
-        lastPalmFrame = frameCount;
+        if (!cityModeGestureOrigin) {
+          cityModeGestureOrigin = { x: handSmoothX - dx, y: handSmoothY - dy };
+          cityModeGestureFrames = 0;
+        }
+        cityModeGestureFrames++;
+        const gestureX = handSmoothX - cityModeGestureOrigin.x;
+        const gestureY = handSmoothY - cityModeGestureOrigin.y;
+        const gestureMove = Math.hypot(gestureX, gestureY);
+        if (gestureMove > CITY_MODE_SWIPE_DISTANCE &&
+            cityModeGestureFrames >= CITY_MODE_SWIPE_MIN_FRAMES) {
+          // 用一段摆手的总位移判断方向，避免回手时被瞬时反向动作抢判。
+          const direction = Math.abs(gestureX) >= Math.abs(gestureY)
+            ? (gestureX >= 0 ? "left" : "right")
+            : (gestureY >= 0 ? "up" : "down");
+          navigateKeyCity(direction);
+          cityModeLastSwitchAt = nowMs;
+          cityModeSwipeArmed = false;
+          cityModeStillFrames = 0;
+          cityModeReturnAnchor = cityModeGestureOrigin;
+          resetCityModeSwipeGesture();
+          lastPalm = { x: handSmoothX, y: handSmoothY };
+          lastPalmFrame = frameCount;
+        }
       }
       dx = 0; dy = 0;
       spinX = spinY = 0;
@@ -3368,13 +3804,13 @@ function onHandResults(results) {
     }
 
     rotY += dx * followX;
-    rotX += dy * HAND_FOLLOW_Y * invertY;
+    rotX += dy * HAND_FOLLOW_Y * HAND_TOUCH_Y;
 
     // 换算成「每帧速度」，并保留一点动量记忆：
     // 快速甩一下之后，就算手马上停住或离开画面，地球也会继续转
     const dtSec2 = Math.max(0.01, (frameCount - lastPalmFrame) * (deltaTime / 1000));
     const vx = (dx / dtSec2) * followX / 60;      // ÷60 → 单位是「每 1/60 秒转多少」
-    const vy = (dy / dtSec2) * HAND_FOLLOW_Y * invertY / 60;
+    const vy = (dy / dtSec2) * HAND_FOLLOW_Y * HAND_TOUCH_Y / 60;
     spinY = spinY * MOMENTUM + vx * (1 - MOMENTUM);
     spinX = spinX * MOMENTUM + vy * (1 - MOMENTUM);
 
@@ -3550,8 +3986,6 @@ function readGesture() {
       if (y > maxY) maxY = y;
     }
   }
-  motionCount = n;
-
   // 整幅画面都在变 → 是光线或曝光在动，不是手，忽略
   if (n > aw * ah * 0.4) {
     motionVX *= 0.5; motionVY *= 0.5;
@@ -3593,7 +4027,13 @@ function readGesture() {
 }
 
 function cameraReady() {
-  return videoEl && videoEl.readyState >= 2 && videoEl.videoWidth > 0;
+  if (!videoEl || videoEl.readyState < 2 || videoEl.videoWidth <= 0) return false;
+  const stream = videoEl.srcObject;
+  if (stream && typeof stream.getVideoTracks === "function") {
+    const track = stream.getVideoTracks()[0];
+    if (track && track.readyState === "ended") return false;
+  }
+  return true;
 }
 
 /* ==========================================================
@@ -3629,10 +4069,14 @@ function mouseDragged() {
   if (Math.hypot(mouseX - mouseDownX, mouseY - mouseDownY) > CITY_CLICK_MAX_MOVE) {
     mouseMoved = true;
   }
-  if (cityFocus) cancelCityFocus();
+  if (cityModeActive) {
+    if (mouseMoved) exitCityMode();
+  } else if (cityFocus) {
+    cancelCityFocus();
+  }
 
   const dx = (mouseX - pmouseX) * 0.006;
-  const dy = (mouseY - pmouseY) * 0.006 * invertY;
+  const dy = (mouseY - pmouseY) * 0.006 * HAND_TOUCH_Y;
   rotY += dx;
   rotX += dy;
   rotX = constrain(rotX, -1.3, 1.3);
@@ -3649,18 +4093,29 @@ function mouseWheel(event) {
 }
 
 function keyPressed() {
+  if (tutorialOpen) {
+    if (key === "Escape" || key === "Esc") closeTutorial();
+    return;
+  }
+  if (key === "u" || key === "U") {
+    document.body.classList.toggle("ui-hidden");
+    return false;
+  }
   if (key === " ") autoSpin = !autoSpin;
   if (key === "c" || key === "C") {
     camOn = !camOn;
     prevData = null;      // 重新开始比较，避免开关瞬间画面乱跳
+    lockedHandLabel = ""; // 重新开关摄像头后允许重新选择左手或右手
+    handLockLastSeenAt = 0;
+    handConsecutiveErrors = 0;
+    handLastError = "";
+    handStatusMessage = "";
+    cameraStartupWarned = false;
+    if (camOn) cameraUnreadySince = millis();
+    showCameraSwitchToast(camOn);
   }
-  if (key === "d" || key === "D") showDebug = !showDebug;
-
   // f 强制显示/隐藏航线（默认要放大才出现，这个方便截图）
   if (key === "f" || key === "F") forceFlights = !forceFlights;
-
-  // v 切换上下方向
-  if (key === "v" || key === "V") invertY *= -1;
 
   // [ ] 随时调整左右灵敏度（调完看左上角显示的值）
   if (key === "[") followX = Math.max(0.5, followX - 0.2);
