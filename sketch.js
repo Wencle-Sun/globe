@@ -426,6 +426,7 @@ let cameraRestartAttempts = 0;
 let cameraUnreadySince = 0;
 let cameraEverReady = false;
 let cameraStartedAt = 0;
+let cameraGeneration = 0;
 let cameraStartupWarned = false;
 // 仪器元素：经纬网 / 赤道环 / 背景星 / 入场扫描
 let ptsGrid = [], ptsRing = [], bgStars = [];
@@ -1615,17 +1616,72 @@ function drawMeteors(ctx) {
   drawMeteorSet(ctx, showerMeteors);
 }
 
-function setupCamera() {
+function isMobileCameraDevice() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function preferredDesktopCamera(devices) {
+  const cameras = devices.filter(d => d.kind === "videoinput" && d.deviceId && d.label);
+  const remote = /iphone|ipad|continuity|连续互通|連續互通|接续互通|接續互通|desk.?view|桌面视角|桌上視角/i;
+  const local = cameras.filter(d => !remote.test(d.label));
+  return local.find(d => /facetime|built.?in|integrated|internal|内置|內建|内蔵/i.test(d.label)) ||
+    local.find(d => !/virtual|obs|虚拟/i.test(d.label)) || local[0] || null;
+}
+
+async function setupCamera() {
+  const generation = ++cameraGeneration;
   cameraStartedAt = millis();
   cameraStartupWarned = false;
-  capture = createCapture(VIDEO);
-  videoEl = capture.elt || capture;
-  if (videoEl && videoEl.style) videoEl.style.display = "none";
-  if (videoEl && videoEl.play) {
-    const pr = videoEl.play();
-    if (pr && pr.catch) pr.catch(() => {});     // 忽略自动播放限制的报错
+  let stream = null;
+  const stop = value => { if (value) value.getTracks().forEach(track => track.stop()); };
+  try {
+    const media = navigator.mediaDevices;
+    if (!media || !media.getUserMedia) throw new Error("摄像头需要 HTTPS 或本地服务器");
+    const mobile = isMobileCameraDevice();
+    const list = async () => {
+      try { return await media.enumerateDevices(); } catch (_) { return []; }
+    };
+    const preferred = mobile ? null : preferredDesktopCamera(await list());
+    const request = device => media.getUserMedia({
+      audio: false,
+      video: device ? { deviceId: { exact: device.deviceId } } : { facingMode: { ideal: "user" } }
+    });
+    if (generation !== cameraGeneration) return;
+    stream = await request(preferred);
+    if (generation !== cameraGeneration) { stop(stream); return; }
+    // 首次授权后浏览器才可能公开设备名称，再检查一次，释放临时默认流。
+    if (!mobile && !preferred) {
+      const resolved = preferredDesktopCamera(await list());
+      const track = stream.getVideoTracks()[0];
+      if (resolved && track.getSettings().deviceId !== resolved.deviceId) {
+        stop(stream);
+        stream = null;
+        if (generation !== cameraGeneration) return;
+        stream = await request(resolved);
+      }
+    }
+    if (generation !== cameraGeneration) { stop(stream); return; }
+    const element = document.createElement("video");
+    element.autoplay = true;
+    element.muted = true;
+    element.playsInline = true;
+    element.setAttribute("playsinline", "");
+    element.style.display = "none";
+    element.srcObject = stream;
+    document.body.appendChild(element);
+    capture = videoEl = element;
+    handLastVideoTime = -1;
+    bindCameraEvents();
+    try { await element.play(); } catch (_) {}
+  } catch (error) {
+    stop(stream);
+    if (generation !== cameraGeneration) return;
+    cameraOk = false;
+    setStatus(error.name === "NotAllowedError"
+      ? "摄像头未获授权，可使用鼠标操作"
+      : "摄像头无法启动，请检查内置摄像头是否被占用；可使用鼠标操作");
   }
-  bindCameraEvents();
 }
 
 function bindCameraEvents() {
@@ -1638,6 +1694,8 @@ function bindCameraEvents() {
 }
 
 function removeCameraElement() {
+  cameraGeneration++;
+  if (videoEl && videoEl.srcObject) videoEl.srcObject.getTracks().forEach(track => track.stop());
   try {
     if (capture && typeof capture.remove === "function") capture.remove();
     else if (videoEl && typeof videoEl.remove === "function") videoEl.remove();
@@ -1662,8 +1720,8 @@ function restartCamera() {
   cameraRestartAttempts++;
   cameraUnreadySince = 0;
   removeCameraElement();
-  setTimeout(() => {
-    if (!document.hidden) setupCamera();
+  setTimeout(async () => {
+    if (!document.hidden) await setupCamera();
     cameraRestarting = false;
     if (videoEl) recoverHands("摄像头重连");
   }, CAMERA_RESTART_DELAY_MS);
