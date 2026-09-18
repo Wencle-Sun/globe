@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>深空制图仪 · Cartograph</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="js/p5.min.js"></script>
@@ -43,6 +43,9 @@
     </svg>
     <span>详细教程</span>
   </button>
+
+  <button id="landscape-button" type="button">横屏体验</button>
+  <p id="landscape-help" role="status" hidden></p>
 
   <div id="key-hint">
     <span><b>空格</b> 暂停自转</span>
@@ -226,6 +229,6 @@
   <div id="vignette"></div>
   <div id="grain"></div>
 
-  <script src="sketch.js?v=20260914-u-key-hide-ui"></script>
+  <script src="sketch.js?v=20260919-landscape"></script>
 </body>
 </html>

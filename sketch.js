@@ -2934,6 +2934,7 @@ function showCameraSwitchToast(enabled) {
 }
 
 function initTutorial() {
+  initLandscapeMode();
   const button = document.getElementById("tutorial-button");
   const overlay = document.getElementById("tutorial-overlay");
   const close = document.getElementById("tutorial-close");
@@ -2950,7 +2951,7 @@ function initTutorial() {
 }
 
 function tutorialBackgroundElements() {
-  return document.querySelectorAll("#hud, #hint, #key-hint, #tutorial-button, #observer-city, #meteor-shower-label, #observer-toast, #left-scrim, canvas");
+  return document.querySelectorAll("#hud, #hint, #key-hint, #landscape-button, #landscape-help, #tutorial-button, #observer-city, #meteor-shower-label, #observer-toast, #left-scrim, canvas");
 }
 
 function setTutorialBackgroundInert(inert) {
@@ -4148,4 +4149,46 @@ function windowResized() {
   background(4, 6, 12);
   setupDetect();
   buildStars();
+}
+
+
+// 手机横屏入口；不支持方向锁定时使用系统旋转，不旋转画布坐标。
+function initLandscapeMode() {
+  const button = document.getElementById("landscape-button");
+  const help = document.getElementById("landscape-help");
+  if (!button || button.dataset.bound) return;
+  button.dataset.bound = "true";
+  const update = () => {
+    button.textContent = document.fullscreenElement ? "退出全屏" : "横屏体验";
+    if (window.matchMedia("(orientation: landscape)").matches) help.hidden = true;
+  };
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    try {
+      if (document.fullscreenElement) {
+        if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+        await document.exitFullscreen();
+      } else {
+        if (document.documentElement.requestFullscreen) {
+          try { await document.documentElement.requestFullscreen(); } catch (_) {}
+        }
+        if (screen.orientation && screen.orientation.lock) {
+          try { await screen.orientation.lock("landscape"); } catch (_) {}
+        }
+        if (!window.matchMedia("(orientation: landscape)").matches) {
+          help.textContent = "请将手机横过来；若画面未旋转，请关闭手机的方向锁定。";
+          help.hidden = false;
+        }
+      }
+    } catch (_) {
+      help.textContent = "请将手机横过来，并关闭手机的方向锁定。";
+      help.hidden = false;
+    } finally {
+      button.disabled = false;
+      update();
+    }
+  });
+  document.addEventListener("fullscreenchange", update);
+  window.addEventListener("resize", update);
+  update();
 }
